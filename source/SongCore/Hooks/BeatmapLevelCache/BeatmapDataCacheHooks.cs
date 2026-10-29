@@ -59,20 +59,29 @@ namespace SongCore.Hooks.BeatmapLevelCache
 
         public void Initialize()
         {
+            Collections.BeatmapDataInvalidated += InvalidateBeatmapData;
             _readAllTextFromPathAsyncHook = new Hook(typeof(BeatmapLevelDataUtils).GetMethod(nameof(BeatmapLevelDataUtils.ReadAllTextFromPathAsync))!, LogReadAllTextFromPathAsync, true);
-            _replaceDidSelectLevelEventHook = new Hook(typeof(LevelCollectionViewController).GetMethod(nameof(LevelCollectionViewController.DidActivate), BindingFlags.Instance | BindingFlags.NonPublic)!, ReplaceDidSelectLevelEvent, true);
-            _replaceDidChangeContentEventHook = new Hook(typeof(StandardLevelDetailViewController).GetMethod(nameof(StandardLevelDetailViewController.DidActivate), BindingFlags.Instance | BindingFlags.NonPublic)!, ReplaceDidChangeContentEvent, true);
+            _replaceDidSelectLevelEventHook = new Hook(typeof(LevelCollectionViewController).GetMethod("DidActivate", BindingFlags.Instance | BindingFlags.NonPublic)!, ReplaceDidSelectLevelEvent, true);
+            _replaceDidChangeContentEventHook = new Hook(typeof(StandardLevelDetailViewController).GetMethod("DidActivate", BindingFlags.Instance | BindingFlags.NonPublic)!, ReplaceDidChangeContentEvent, true);
             _createbeatmapKeyHook = new Hook(typeof(StandardLevelDetailView).GetMethod(nameof(StandardLevelDetailView.CreateBeatmapKey), BindingFlags.Instance | BindingFlags.NonPublic)!, SetBeatmapLevelCacheBeatmapKey, true);
             _loadBeatmapDataAsyncHook = new Hook(typeof(BeatmapDataLoader).GetMethod(nameof(BeatmapDataLoader.LoadBeatmapDataAsync))!, LoadBeatmapDataWithCacheAsync, true);
         }
 
         public void Dispose()
         {
+            Collections.BeatmapDataInvalidated -= InvalidateBeatmapData;
             _readAllTextFromPathAsyncHook.Dispose();
             _replaceDidSelectLevelEventHook.Dispose();
             _replaceDidChangeContentEventHook.Dispose();
             _createbeatmapKeyHook.Dispose();
             _loadBeatmapDataAsyncHook.Dispose();
+        }
+
+        private void InvalidateBeatmapData(BeatmapKey key)
+        {
+            if (!_beatmapLevelCache.DifficultyMatches(key)) return;
+            _beatmapLevelCache.InvalidateDifficulty();
+            _beatmapLevelCache.BeatmapKey = key;
         }
 
         private async Task<IBeatmapLevelData?> InitializeBeatmapLevelCacheAsync(BeatmapLevel beatmapLevel, CancellationToken cancellationToken)
@@ -255,16 +264,16 @@ namespace SongCore.Hooks.BeatmapLevelCache
             tcs.TrySetResult(true);
         }
 
-        private Task<IReadonlyBeatmapData?> LoadBeatmapDataWithCacheAsync(Func<BeatmapDataLoader, IBeatmapLevelData, BeatmapKey, float, bool, IEnvironmentInfo?, IEnvironmentInfo?, BeatmapLevelDataVersion, GameplayModifiers?, PlayerSpecificSettings?, bool, Task<IReadonlyBeatmapData?>> original, BeatmapDataLoader instance, IBeatmapLevelData beatmapLevelData, BeatmapKey beatmapKey, float startBpm, bool loadingForDesignatedEnvironment, IEnvironmentInfo? targetEnvironmentInfo, IEnvironmentInfo? originalEnvironmentInfo, BeatmapLevelDataVersion beatmapLevelDataVersion, GameplayModifiers? gameplayModifiers, PlayerSpecificSettings? playerSpecificSettings, bool enableBeatmapDataCaching)
+        private Task<IReadonlyBeatmapData?> LoadBeatmapDataWithCacheAsync(Func<BeatmapDataLoader, IBeatmapLevelData, BeatmapKey, float, bool, IEnvironmentInfo?, IEnvironmentInfo?, BeatmapLevelDataVersion, GameplayModifiers?, PlayerSpecificSettings?, Task<IReadonlyBeatmapData?>> original, BeatmapDataLoader instance, IBeatmapLevelData beatmapLevelData, BeatmapKey beatmapKey, float startBpm, bool loadingForDesignatedEnvironment, IEnvironmentInfo? targetEnvironmentInfo, IEnvironmentInfo? originalEnvironmentInfo, BeatmapLevelDataVersion beatmapLevelDataVersion, GameplayModifiers? gameplayModifiers, PlayerSpecificSettings? playerSpecificSettings)
         {
             Assert.That(UnityGame.OnMainThread, "This method must be called on the main thread.");
 
-            var request = new BeatmapDataRequest(beatmapLevelData, beatmapKey, startBpm, loadingForDesignatedEnvironment, targetEnvironmentInfo, originalEnvironmentInfo, beatmapLevelDataVersion, gameplayModifiers, playerSpecificSettings, enableBeatmapDataCaching);
+            var request = new BeatmapDataRequest(beatmapLevelData, beatmapKey, startBpm, loadingForDesignatedEnvironment, targetEnvironmentInfo, originalEnvironmentInfo, beatmapLevelDataVersion, gameplayModifiers, playerSpecificSettings);
 
             if (!_beatmapLevelCache.LevelMatches(beatmapLevelData))
             {
                 Plugin.Log.Debug("Level data changed, returning original method");
-                return original(instance, beatmapLevelData, beatmapKey, startBpm, loadingForDesignatedEnvironment, targetEnvironmentInfo, originalEnvironmentInfo, beatmapLevelDataVersion, gameplayModifiers, playerSpecificSettings, enableBeatmapDataCaching);
+                return original(instance, beatmapLevelData, beatmapKey, startBpm, loadingForDesignatedEnvironment, targetEnvironmentInfo, originalEnvironmentInfo, beatmapLevelDataVersion, gameplayModifiers, playerSpecificSettings);
             }
 
             if (_beatmapLevelCache.BeatmapDataRequest?.Equals(request) == true)

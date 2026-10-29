@@ -14,6 +14,15 @@ namespace SongCore
 {
     public static class Collections
     {
+        internal static event Action<BeatmapKey>? BeatmapDataInvalidated;
+
+        public static void InvalidateBeatmapData(BeatmapKey key)
+        {
+            if (!UnityGame.OnMainThread) throw new InvalidOperationException("Invalidate beatmap data on the Unity thread.");
+            BeatmapDataInvalidated?.Invoke(key);
+        }
+        public static string GetCurrentCharacteristicSerializedName(BeatmapCharacteristic characteristic) => NativeCompatibility.CharacteristicName(characteristic);
+
         private static readonly List<string> _capabilities = new List<string>();
         private static readonly List<BeatmapCharacteristicSO> _customCharacteristics = new List<BeatmapCharacteristicSO>();
 
@@ -68,8 +77,7 @@ namespace SongCore
             }
 
             var diffData = songData?._difficulties.FirstOrDefault(x =>
-                x._difficulty == beatmapKey.difficulty && (x._beatmapCharacteristicName == beatmapKey.beatmapCharacteristic.characteristicNameLocalizationKey ||
-                                                           x._beatmapCharacteristicName == beatmapKey.beatmapCharacteristic.serializedName));
+                x._difficulty == beatmapKey.difficulty && x._beatmapCharacteristicName == GetCurrentCharacteristicSerializedName(beatmapKey.characteristic));
 
             return diffData;
         }

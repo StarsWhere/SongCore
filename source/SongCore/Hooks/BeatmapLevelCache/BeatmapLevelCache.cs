@@ -88,17 +88,19 @@ namespace SongCore.Hooks.BeatmapLevelCache
                 return data;
             }
 
+            bool cacheable = Matches(beatmapLevelData, beatmapKey, beatmapDataType);
+            bool previousIO = IOBlacklistHook.AllowIO.Value;
             IOBlacklistHook.AllowIO.Value = true;
             try
             {
                 data = original();
-                CacheJsonData(beatmapDataType, data);
+                if (cacheable && Matches(beatmapLevelData, beatmapKey, beatmapDataType)) CacheJsonData(beatmapDataType, data);
 
                 return data;
             }
             finally
             {
-                IOBlacklistHook.AllowIO.Value = false;
+                IOBlacklistHook.AllowIO.Value = previousIO;
             }
         }
 
@@ -111,7 +113,10 @@ namespace SongCore.Hooks.BeatmapLevelCache
 
             var idx = (int)beatmapDataType;
 
-            var cachedTask = _jsonTasks[idx];
+            // Requests for a different difficulty may overlap a UI selection change.
+            // They must neither consume nor overwrite the selected difficulty's slot.
+            bool cacheable = Matches(beatmapLevelData, beatmapKey, beatmapDataType);
+            var cachedTask = cacheable ? _jsonTasks[idx] : null;
             if (cachedTask != null)
             {
                 Plugin.Log.Debug($"Returning {beatmapDataType} JSON task from cache");
@@ -120,14 +125,15 @@ namespace SongCore.Hooks.BeatmapLevelCache
 
             Task<string?>? originalTask = null;
 
+            bool previousIO = IOBlacklistHook.AllowIO.Value;
             IOBlacklistHook.AllowIO.Value = true;
             try
             {
                 originalTask = original();
-                _jsonTasks[idx] = originalTask;
+                if (cacheable) _jsonTasks[idx] = originalTask;
                 data = await originalTask;
 
-                if (originalTask == _jsonTasks[idx])
+                if (cacheable && Matches(beatmapLevelData, beatmapKey, beatmapDataType) && originalTask == _jsonTasks[idx])
                 {
                     CacheJsonData(beatmapDataType, data);
                 }
@@ -136,9 +142,9 @@ namespace SongCore.Hooks.BeatmapLevelCache
             }
             finally
             {
-                IOBlacklistHook.AllowIO.Value = false;
+                IOBlacklistHook.AllowIO.Value = previousIO;
 
-                if (originalTask != null && originalTask == _jsonTasks[idx])
+                if (cacheable && originalTask != null && originalTask == _jsonTasks[idx])
                 {
                     _jsonTasks[idx] = null;
                 }
@@ -149,7 +155,7 @@ namespace SongCore.Hooks.BeatmapLevelCache
         {
             Assert.That(UnityGame.OnMainThread, "This method must be called on the main thread.");
 
-            if (LevelMatches(beatmapLevelData) && (beatmapDataType == BeatmapDataType.Audio || DifficultyMatches(beatmapKey)))
+            if (Matches(beatmapLevelData, beatmapKey, beatmapDataType))
             {
                 var cachedData = _jsonData[(int)beatmapDataType];
                 if (cachedData != null)
@@ -169,5 +175,7 @@ namespace SongCore.Hooks.BeatmapLevelCache
             Plugin.Log.Debug($"Storing {beatmapDataType} JSON data in cache");
             _jsonData[(int)beatmapDataType] = data;
         }
+        private bool Matches(IBeatmapLevelData level, BeatmapKey key, BeatmapDataType kind) =>
+            LevelMatches(level) && (kind == BeatmapDataType.Audio || DifficultyMatches(key));
     }
 }
