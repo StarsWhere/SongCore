@@ -332,3 +332,14 @@ ASALocalRun/
 
 # Local History for Visual Studio
 .localhistory/
+
+# Local compatibility build inputs and outputs
+/.tmp/
+/releases/
+**/bin/
+**/obj/
+**/__pycache__/
+/Beat Saber_Data/
+/UserData/
+/Plugins/
+/Libs/
