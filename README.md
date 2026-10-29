@@ -384,3 +384,7 @@ __All Directions Environment outside of 90/360__
 ```csharp
 SongCore.Collections.AddSeperateSongFolder("Name of the Entry/Levelpack if set to be its own", "Full path to the folder songs will be stored in", Pack(Refer to folders.xml documentation), Sprite Image(Optional, if null defaults to folder icon), bool wip (Optional)  )
 ```
+
+## Build for Beat Saber 1.45.2
+
+Run `pwsh -File ./scripts/build.ps1 -GameRoot '<Beat Saber directory>'`. The build uses the installed game and mod assemblies and downloads dnlib 4.5.0 into the repository's temporary cache. The plugin is written to `releases/bs-1.45.2/Plugins/`.
