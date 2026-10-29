@@ -27,29 +27,19 @@ namespace SongCore.Hooks
 
         private Version GetVersion(Func<string, Version> original, string data)
         {
-            return ParseVersion(data.AsSpan(0, 50)) ?? ParseVersion(data.AsSpan()) ?? BeatmapSaveDataHelpers.noVersion;
-        }
-
-        private Version? ParseVersion(ReadOnlySpan<char> span)
-        {
-            try
+            Version? legacy = null;
+            using var input = new System.IO.StringReader(data);
+            using var reader = new Newtonsoft.Json.JsonTextReader(input);
+            while (reader.Read())
             {
-                var index = span.IndexOf(VersionSearchString);
-                if (index != -1)
-                {
-                    span = span.Slice(index + VersionSearchString.Length + 1);
-                    span = span.Slice(span.IndexOf('"') + 1);
-
-                    if (Version.TryParse(span.Slice(0, span.IndexOf('"')), out var version))
-                    {
-                        return version;
-                    }
-                }
+                if (reader.TokenType != Newtonsoft.Json.JsonToken.PropertyName || reader.Depth != 1) continue;
+                string? name = reader.Value as string;
+                if (!reader.Read()) break;
+                if (name == "version" && Version.TryParse(reader.Value as string, out var modern)) return modern;
+                if (name == "_version" && Version.TryParse(reader.Value as string, out var version)) legacy = version;
+                reader.Skip();
             }
-            // Very rare case where the end of the key or value might be out of bounds.
-            catch (ArgumentOutOfRangeException) { }
-
-            return null;
+            return legacy ?? BeatmapSaveDataHelpers.noVersion;
         }
     }
 }
