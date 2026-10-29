@@ -117,52 +117,52 @@ namespace SongCore.UI
         {
             if (!MissingReqIcon)
             {
-                MissingReqIcon = Utils.LoadSpriteFromResources("SongCore.Icons.RedX.png")!;
+                MissingReqIcon = SongCore.Utilities.Utils.LoadSpriteFromResources("SongCore.Icons.RedX.png")!;
             }
 
             if (!HaveReqIcon)
             {
-                HaveReqIcon = Utils.LoadSpriteFromResources("SongCore.Icons.GreenCheck.png")!;
+                HaveReqIcon = SongCore.Utilities.Utils.LoadSpriteFromResources("SongCore.Icons.GreenCheck.png")!;
             }
 
             if (!HaveSuggestionIcon)
             {
-                HaveSuggestionIcon = Utils.LoadSpriteFromResources("SongCore.Icons.YellowCheck.png")!;
+                HaveSuggestionIcon = SongCore.Utilities.Utils.LoadSpriteFromResources("SongCore.Icons.YellowCheck.png")!;
             }
 
             if (!MissingSuggestionIcon)
             {
-                MissingSuggestionIcon = Utils.LoadSpriteFromResources("SongCore.Icons.YellowX.png")!;
+                MissingSuggestionIcon = SongCore.Utilities.Utils.LoadSpriteFromResources("SongCore.Icons.YellowX.png")!;
             }
 
             if (!WarningIcon)
             {
-                WarningIcon = Utils.LoadSpriteFromResources("SongCore.Icons.Warning.png")!;
+                WarningIcon = SongCore.Utilities.Utils.LoadSpriteFromResources("SongCore.Icons.Warning.png")!;
             }
 
             if (!InfoIcon)
             {
-                InfoIcon = Utils.LoadSpriteFromResources("SongCore.Icons.Info.png")!;
+                InfoIcon = SongCore.Utilities.Utils.LoadSpriteFromResources("SongCore.Icons.Info.png")!;
             }
 
             if (!ColorsIcon)
             {
-                ColorsIcon = Utils.LoadSpriteFromResources("SongCore.Icons.Colors.png")!;
+                ColorsIcon = SongCore.Utilities.Utils.LoadSpriteFromResources("SongCore.Icons.Colors.png")!;
             }
 
             if (!EnvironmentIcon)
             {
-                EnvironmentIcon = Utils.LoadSpriteFromResources("SongCore.Icons.Environment.png")!;
+                EnvironmentIcon = SongCore.Utilities.Utils.LoadSpriteFromResources("SongCore.Icons.Environment.png")!;
             }
 
             if (!OneSaberIcon)
             {
-                OneSaberIcon = Utils.LoadSpriteFromResources("SongCore.Icons.OneSaber.png")!;
+                OneSaberIcon = SongCore.Utilities.Utils.LoadSpriteFromResources("SongCore.Icons.OneSaber.png")!;
             }
 
             if (!StandardIcon)
             {
-                StandardIcon = Utils.LoadSpriteFromResources("SongCore.Icons.Standard.png")!;
+                StandardIcon = SongCore.Utilities.Utils.LoadSpriteFromResources("SongCore.Icons.Standard.png")!;
             }
         }
 
@@ -201,7 +201,7 @@ namespace SongCore.UI
                     {
                         if (!string.IsNullOrWhiteSpace(author._iconPath))
                         {
-                            author.icon = Utils.LoadSpriteFromFile(Path.Combine(_customLevelLoader._loadedBeatmapSaveData[beatmapLevel.levelID].customLevelFolderInfo.folderPath, author._iconPath));
+                            author.icon = SongCore.Utilities.Utils.LoadSpriteFromFile(Path.Combine(_customLevelLoader._loadedBeatmapSaveData[beatmapLevel.levelID].customLevelFolderInfo.folderPath, author._iconPath));
                             customListTableData.Data.Add(new CustomCellInfo(author._name, author._role, author.icon != null ? author.icon : InfoIcon));
                         }
                         else
@@ -225,7 +225,7 @@ namespace SongCore.UI
             //Additional Diff Info
             if (diffData != null)
             {
-                if (Utils.DiffHasColors(diffData))
+                if (SongCore.Utilities.Utils.DiffHasColors(diffData))
                 {
                     customListTableData.Data.Add(new CustomCellInfo($"<size=75%>Custom Colors Available", $"Click here to preview & enable or disable it.", ColorsIcon));
                 }
@@ -236,7 +236,7 @@ namespace SongCore.UI
                     var environmentInfoName = songData._environmentNames.ElementAtOrDefault(diffData._environmentNameIdx.Value);
                     if (environmentInfoName != null)
                     {
-                        if (environmentInfoName != beatmapLevel.GetEnvironmentName(beatmapKey.Value.beatmapCharacteristic, beatmapKey.Value.difficulty))
+                        if (environmentInfoName != beatmapLevel.GetEnvironmentName(beatmapKey.Value.characteristic, beatmapKey.Value.difficulty))
                         {
                             environmentName = _environmentsListModel.GetEnvironmentInfoBySerializedNameSafe(environmentInfoName).environmentName;
                         }
@@ -280,7 +280,7 @@ namespace SongCore.UI
                 if (customListTableData.Data.Count > 0)
                 {
                     if (environmentName == null && beatmapLevel != null)
-                        environmentName = beatmapLevel.GetEnvironmentName(beatmapKey.Value.beatmapCharacteristic, beatmapKey.Value.difficulty);
+                        environmentName = beatmapLevel.GetEnvironmentName(beatmapKey.Value.characteristic, beatmapKey.Value.difficulty);
                     customListTableData.Data.Add(new CustomCellInfo("<size=75%>Environment Info", $"This Map uses the Environment: {environmentName}", EnvironmentIcon));
 
                 }

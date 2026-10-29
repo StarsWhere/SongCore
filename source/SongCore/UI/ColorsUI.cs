@@ -91,13 +91,13 @@ namespace SongCore.UI
 
         private void SetColors(SongData.DifficultyData songData)
         {
-            var saberLeft = songData._colorLeft == null ? voidColor : Utils.ColorFromMapColor(songData._colorLeft);
-            var saberRight = songData._colorRight == null ? voidColor : Utils.ColorFromMapColor(songData._colorRight);
-            var envLeft = songData._envColorLeft == null ? voidColor : Utils.ColorFromMapColor(songData._envColorLeft);
-            var envRight = songData._envColorRight == null ? voidColor : Utils.ColorFromMapColor(songData._envColorRight);
-            var envLeftBoost = songData._envColorLeftBoost == null ? voidColor : Utils.ColorFromMapColor(songData._envColorLeftBoost);
-            var envRightBoost = songData._envColorRightBoost == null ? voidColor : Utils.ColorFromMapColor(songData._envColorRightBoost);
-            var obstacle = songData._obstacleColor == null ? voidColor : Utils.ColorFromMapColor(songData._obstacleColor);
+            var saberLeft = songData._colorLeft == null ? voidColor : SongCore.Utilities.Utils.ColorFromMapColor(songData._colorLeft);
+            var saberRight = songData._colorRight == null ? voidColor : SongCore.Utilities.Utils.ColorFromMapColor(songData._colorRight);
+            var envLeft = songData._envColorLeft == null ? voidColor : SongCore.Utilities.Utils.ColorFromMapColor(songData._envColorLeft);
+            var envRight = songData._envColorRight == null ? voidColor : SongCore.Utilities.Utils.ColorFromMapColor(songData._envColorRight);
+            var envLeftBoost = songData._envColorLeftBoost == null ? voidColor : SongCore.Utilities.Utils.ColorFromMapColor(songData._envColorLeftBoost);
+            var envRightBoost = songData._envColorRightBoost == null ? voidColor : SongCore.Utilities.Utils.ColorFromMapColor(songData._envColorRightBoost);
+            var obstacle = songData._obstacleColor == null ? voidColor : SongCore.Utilities.Utils.ColorFromMapColor(songData._obstacleColor);
 
             colorSchemeView.SetColors(saberLeft, saberRight, envLeft, envRight, envLeftBoost, envRightBoost, obstacle);
         }

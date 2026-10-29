@@ -53,7 +53,7 @@ namespace SongCore.Data
                 {
                     try
                     {
-                        var packImage = Utils.LoadSpriteFromFile(folderEntry.ImagePath);
+                        var packImage = SongCore.Utilities.Utils.LoadSpriteFromFile(folderEntry.ImagePath);
                         if (packImage != null)
                         {
                             image = packImage;

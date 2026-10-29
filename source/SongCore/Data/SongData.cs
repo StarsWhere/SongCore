@@ -236,7 +236,7 @@ namespace SongCore.Data
                             bool? showRotationNoteSpawnLines = null;
                             string[]? styleTags = null;
 
-                            var difficulty = Utils.ToEnum((string)difficultyBeatmap["_difficulty"], BeatmapDifficulty.Normal);
+                            var difficulty = SongCore.Utilities.Utils.ToEnum((string)difficultyBeatmap["_difficulty"], BeatmapDifficulty.Normal);
                             var beatmapColorSchemeIdx = difficultyBeatmap.Value<int?>("_beatmapColorSchemeIdx");
                             var environmentNameIdx = difficultyBeatmap.Value<int?>("_environmentNameIdx");
                             var useSongCoreColors = true;
@@ -435,7 +435,7 @@ namespace SongCore.Data
                         bool? showRotationNoteSpawnLines = null;
                         string[]? styleTags = null;
 
-                        var difficulty = Utils.ToEnum((string)difficultyBeatmap["difficulty"], BeatmapDifficulty.Normal);
+                        var difficulty = SongCore.Utilities.Utils.ToEnum((string)difficultyBeatmap["difficulty"], BeatmapDifficulty.Normal);
                         var beatmapColorSchemeIdx = difficultyBeatmap.Value<int?>("beatmapColorSchemeIdx");
                         var environmentNameIdx = difficultyBeatmap.Value<int?>("environmentNameIdx");
                         var useSongCoreColors = true;

@@ -56,8 +56,8 @@ namespace SongCore.Hooks
             _cosmeticCharacteristicHook = new Hook(typeof(BeatmapCharacteristicSegmentedControlController).GetMethod(nameof(BeatmapCharacteristicSegmentedControlController.SetData))!, SetCosmeticCharacteristic, true);
             _requirementsHook = new Hook(typeof(StandardLevelDetailView).GetMethod(nameof(StandardLevelDetailView.RefreshContent))!, ProcessBeatmapRequirements, true);
             _buttonsStateHook = new Hook(typeof(StandardLevelDetailView).GetMethod(nameof(StandardLevelDetailView.CheckIfBeatmapLevelDataExists), BindingFlags.Instance | BindingFlags.NonPublic)!, SaveAndRestoreButtonsState, true);
-            _overrideColorSchemeHook = new ILHook(typeof(StandardLevelScenesTransitionSetupDataSO).GetMethod(nameof(StandardLevelScenesTransitionSetupDataSO.Init), BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly)!, OverrideColorSchemeManipulator, true);
-            _overrideMultiplayerColorSchemeHook = new ILHook(typeof(MultiplayerLevelScenesTransitionSetupDataSO).GetMethod(nameof(MultiplayerLevelScenesTransitionSetupDataSO.Init), BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly)!, OverrideColorSchemeManipulator, true);
+            _overrideColorSchemeHook = new ILHook(typeof(StandardLevelScenesTransitionSetupData).GetMethod(nameof(StandardLevelScenesTransitionSetupData.Init), BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly)!, OverrideColorSchemeManipulator, true);
+            _overrideMultiplayerColorSchemeHook = new ILHook(typeof(MultiplayerLevelScenesTransitionSetupData).GetMethod(nameof(MultiplayerLevelScenesTransitionSetupData.Init), BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly)!, OverrideColorSchemeManipulator, true);
         }
 
         public void Dispose()
@@ -140,7 +140,7 @@ namespace SongCore.Hooks
                 return;
             }
 
-            var selectedBeatmapCharacteristic = _standardLevelDetailViewController._standardLevelDetailView._beatmapCharacteristicSegmentedControlController.selectedBeatmapCharacteristic.serializedName;
+            var selectedBeatmapCharacteristic = Collections.GetCurrentCharacteristicSerializedName(_standardLevelDetailViewController._standardLevelDetailView._beatmapCharacteristicSegmentedControlController.selectedBeatmapCharacteristic);
             instance._difficultySegmentedControl._texts = instance._difficulties
                 .Select((diff, i) => _characteristicDifficultyLabels.TryGetValue(selectedBeatmapCharacteristic, out var difficultyLabels) && difficultyLabels.TryGetValue(diff, out var difficultyLabel)
                     ? GetDifficultyLabel(difficultyLabel) ?? instance._difficultySegmentedControl._texts[i]
@@ -154,7 +154,7 @@ namespace SongCore.Hooks
             }
         }
 
-        private Task SetupData(Func<LevelBar, BeatmapLevel, BeatmapDifficulty, BeatmapCharacteristicSO, Task> original, LevelBar instance, BeatmapLevel beatmapLevel, BeatmapDifficulty beatmapDifficulty, BeatmapCharacteristicSO beatmapCharacteristic)
+        private Task SetupData(Func<LevelBar, BeatmapLevel, BeatmapDifficulty, BeatmapCharacteristic, Task> original, LevelBar instance, BeatmapLevel beatmapLevel, BeatmapDifficulty beatmapDifficulty, BeatmapCharacteristic beatmapCharacteristic)
         {
             var result = original(instance, beatmapLevel, beatmapDifficulty, beatmapCharacteristic);
 
@@ -163,14 +163,14 @@ namespace SongCore.Hooks
                 return result;
             }
 
-            if (_characteristicDifficultyLabels.TryGetValue(beatmapCharacteristic.serializedName, out var difficultyLabels) && difficultyLabels.TryGetValue(beatmapDifficulty, out var difficultyLabel))
+            if (_characteristicDifficultyLabels.TryGetValue(Collections.GetCurrentCharacteristicSerializedName(beatmapCharacteristic), out var difficultyLabels) && difficultyLabels.TryGetValue(beatmapDifficulty, out var difficultyLabel))
             {
                 instance._difficultyText.textWrappingMode = TextWrappingModes.NoWrap;
                 instance._difficultyText.overflowMode = TextOverflowModes.Ellipsis;
                 instance._difficultyText.text = GetDifficultyLabel(difficultyLabel) ?? instance._difficultyText.text;
             }
 
-            var characteristicDetails = _songData._characteristicDetails?.FirstOrDefault(d => d._beatmapCharacteristicName == beatmapCharacteristic.serializedName);
+            var characteristicDetails = _songData._characteristicDetails?.FirstOrDefault(d => d._beatmapCharacteristicName == Collections.GetCurrentCharacteristicSerializedName(beatmapCharacteristic));
             if (characteristicDetails != null)
             {
                 var sprite = GetCharacteristicIcon(characteristicDetails._characteristicIconFilePath);
@@ -188,16 +188,16 @@ namespace SongCore.Hooks
             return string.IsNullOrWhiteSpace(difficultyLabel) ? null : difficultyLabel.Replace("<", "<\u200B").Replace(">", ">\u200B");
         }
 
-        private void SelectDefaultCharacteristic(Action<BeatmapCharacteristicSegmentedControlController, IEnumerable<BeatmapCharacteristicSO>, BeatmapCharacteristicSO, HashSet<BeatmapCharacteristicSO>> original, BeatmapCharacteristicSegmentedControlController instance, IEnumerable<BeatmapCharacteristicSO> beatmapCharacteristics, BeatmapCharacteristicSO selectedBeatmapCharacteristic, HashSet<BeatmapCharacteristicSO> notAllowedCharacteristics)
+        private void SelectDefaultCharacteristic(Action<BeatmapCharacteristicSegmentedControlController, IEnumerable<BeatmapCharacteristic>, BeatmapCharacteristic, HashSet<BeatmapCharacteristic>> original, BeatmapCharacteristicSegmentedControlController instance, IEnumerable<BeatmapCharacteristic> beatmapCharacteristics, BeatmapCharacteristic selectedBeatmapCharacteristic, HashSet<BeatmapCharacteristic> notAllowedCharacteristics)
         {
             original(instance, beatmapCharacteristics, selectedBeatmapCharacteristic, notAllowedCharacteristics);
 
-            if (_songData == null || _songData._defaultCharacteristic == null || _songData._defaultCharacteristic == instance.selectedBeatmapCharacteristic.serializedName)
+            if (_songData == null || _songData._defaultCharacteristic == null || _songData._defaultCharacteristic == Collections.GetCurrentCharacteristicSerializedName(instance.selectedBeatmapCharacteristic))
             {
                 return;
             }
 
-            var index = instance._currentlyAvailableBeatmapCharacteristics.FindIndex(c => c.serializedName == _songData._defaultCharacteristic);
+            var index = instance._currentlyAvailableBeatmapCharacteristics.FindIndex(c => Collections.GetCurrentCharacteristicSerializedName(c) == _songData._defaultCharacteristic);
             if (index != -1)
             {
                 instance._segmentedControl.SelectCellWithNumber(index);
@@ -205,7 +205,7 @@ namespace SongCore.Hooks
             }
         }
 
-        private void SetCosmeticCharacteristic(Action<BeatmapCharacteristicSegmentedControlController, IEnumerable<BeatmapCharacteristicSO>, BeatmapCharacteristicSO, HashSet<BeatmapCharacteristicSO>> original, BeatmapCharacteristicSegmentedControlController instance, IEnumerable<BeatmapCharacteristicSO> beatmapCharacteristics, BeatmapCharacteristicSO selectedBeatmapCharacteristic, HashSet<BeatmapCharacteristicSO> notAllowedCharacteristics)
+        private void SetCosmeticCharacteristic(Action<BeatmapCharacteristicSegmentedControlController, IEnumerable<BeatmapCharacteristic>, BeatmapCharacteristic, HashSet<BeatmapCharacteristic>> original, BeatmapCharacteristicSegmentedControlController instance, IEnumerable<BeatmapCharacteristic> beatmapCharacteristics, BeatmapCharacteristic selectedBeatmapCharacteristic, HashSet<BeatmapCharacteristic> notAllowedCharacteristics)
         {
             original(instance, beatmapCharacteristics, selectedBeatmapCharacteristic, notAllowedCharacteristics);
 
@@ -216,7 +216,7 @@ namespace SongCore.Hooks
 
             foreach (var characteristicDetails in _songData._characteristicDetails)
             {
-                var index = instance._currentlyAvailableBeatmapCharacteristics.FindIndex(c => c.serializedName == characteristicDetails._beatmapCharacteristicName);
+                var index = instance._currentlyAvailableBeatmapCharacteristics.FindIndex(c => Collections.GetCurrentCharacteristicSerializedName(c) == characteristicDetails._beatmapCharacteristicName);
 
                 if (index == -1)
                 {
@@ -251,7 +251,7 @@ namespace SongCore.Hooks
             var spritePath = Path.Combine(_customLevelLoader._loadedBeatmapSaveData[_standardLevelDetailViewController.beatmapLevel.levelID].customLevelFolderInfo.folderPath, characteristicIconFilePath);
             if (!_characteristicDetailsSprites.TryGetValue(spritePath, out var icon))
             {
-                if ((icon = Utils.LoadSpriteFromFile(spritePath)) != null)
+                if ((icon = SongCore.Utilities.Utils.LoadSpriteFromFile(spritePath)) != null)
                 {
                     _characteristicDetailsSprites.Add(spritePath, icon);
                 }
@@ -289,7 +289,7 @@ namespace SongCore.Hooks
                     !difficultyData.additionalDifficultyData._suggestions.Any() &&
                     !difficultyData.additionalDifficultyData._warnings.Any() &&
                     !difficultyData.additionalDifficultyData._information.Any() &&
-                    !_songData!.contributors.Any() && !Utils.DiffHasColors(difficultyData))
+                    !_songData!.contributors.Any() && !SongCore.Utilities.Utils.DiffHasColors(difficultyData))
                 {
                     _requirementsUI.ButtonGlowColor = false;
                     _requirementsUI.ButtonInteractable = false;
@@ -298,7 +298,7 @@ namespace SongCore.Hooks
                 {
                     _requirementsUI.ButtonGlowColor = true;
                     _requirementsUI.ButtonInteractable = true;
-                    _requirementsUI.SetRainbowColors(Utils.DiffHasColors(difficultyData));
+                    _requirementsUI.SetRainbowColors(SongCore.Utilities.Utils.DiffHasColors(difficultyData));
                 }
                 else if (difficultyData.additionalDifficultyData._warnings.Any())
                 {
@@ -309,7 +309,7 @@ namespace SongCore.Hooks
                         actionButton.interactable = false;
                     }
 
-                    _requirementsUI.SetRainbowColors(Utils.DiffHasColors(difficultyData));
+                    _requirementsUI.SetRainbowColors(SongCore.Utilities.Utils.DiffHasColors(difficultyData));
                 }
             }
 
@@ -322,7 +322,7 @@ namespace SongCore.Hooks
 
                 if (difficultyData != null)
                 {
-                    _requirementsUI.SetRainbowColors(Utils.DiffHasColors(difficultyData));
+                    _requirementsUI.SetRainbowColors(SongCore.Utilities.Utils.DiffHasColors(difficultyData));
                 }
             }
 
@@ -340,7 +340,7 @@ namespace SongCore.Hooks
                 }
             }
 
-            if (beatmapKey.beatmapCharacteristic.serializedName == "MissingCharacteristic")
+            if (Collections.GetCurrentCharacteristicSerializedName(beatmapKey.characteristic) == "MissingCharacteristic")
             {
                 actionButton.interactable = false;
                 practiceButton.interactable = false;
@@ -373,7 +373,7 @@ namespace SongCore.Hooks
             cursor.EmitDelegate(SetOverrideColorScheme);
         }
 
-        private ColorScheme SetOverrideColorScheme(ColorScheme colorScheme, LevelScenesTransitionSetupDataSO levelScenesTransitionSetupData, in BeatmapKey beatmapKey)
+        private ColorScheme SetOverrideColorScheme(ColorScheme colorScheme, LevelScenesTransitionSetupData levelScenesTransitionSetupData, in BeatmapKey beatmapKey)
         {
             var overrideColorScheme = GetOverrideColorScheme(colorScheme, beatmapKey);
 
@@ -382,11 +382,11 @@ namespace SongCore.Hooks
                 return colorScheme;
             }
 
-            if (levelScenesTransitionSetupData is StandardLevelScenesTransitionSetupDataSO standardLevelScenesTransitionSetupData)
+            if (levelScenesTransitionSetupData is StandardLevelScenesTransitionSetupData standardLevelScenesTransitionSetupData)
             {
                 standardLevelScenesTransitionSetupData.usingOverrideColorScheme = true;
             }
-            else if (levelScenesTransitionSetupData is MultiplayerLevelScenesTransitionSetupDataSO multiplayerLevelScenesTransitionSetupData)
+            else if (levelScenesTransitionSetupData is MultiplayerLevelScenesTransitionSetupData multiplayerLevelScenesTransitionSetupData)
             {
                 multiplayerLevelScenesTransitionSetupData.usingOverrideColorScheme = true;
             }
@@ -427,31 +427,31 @@ namespace SongCore.Hooks
 
             var saberLeft = songDifficultyData._colorLeft == null || !_config.CustomSongNoteColors
                 ? currentColorScheme.saberAColor
-                : Utils.ColorFromMapColor(songDifficultyData._colorLeft);
+                : SongCore.Utilities.Utils.ColorFromMapColor(songDifficultyData._colorLeft);
             var saberRight = songDifficultyData._colorRight == null || !_config.CustomSongNoteColors
                 ? currentColorScheme.saberBColor
-                : Utils.ColorFromMapColor(songDifficultyData._colorRight);
+                : SongCore.Utilities.Utils.ColorFromMapColor(songDifficultyData._colorRight);
             var envLeft = songDifficultyData._envColorLeft == null || !_config.CustomSongEnvironmentColors
-                ? songDifficultyData._colorLeft == null ? currentColorScheme.environmentColor0 : Utils.ColorFromMapColor(songDifficultyData._colorLeft)
-                : Utils.ColorFromMapColor(songDifficultyData._envColorLeft);
+                ? songDifficultyData._colorLeft == null ? currentColorScheme.environmentColor0 : SongCore.Utilities.Utils.ColorFromMapColor(songDifficultyData._colorLeft)
+                : SongCore.Utilities.Utils.ColorFromMapColor(songDifficultyData._envColorLeft);
             var envRight = songDifficultyData._envColorRight == null || !_config.CustomSongEnvironmentColors
-                ? songDifficultyData._colorRight == null ? currentColorScheme.environmentColor1 : Utils.ColorFromMapColor(songDifficultyData._colorRight)
-                : Utils.ColorFromMapColor(songDifficultyData._envColorRight);
+                ? songDifficultyData._colorRight == null ? currentColorScheme.environmentColor1 : SongCore.Utilities.Utils.ColorFromMapColor(songDifficultyData._colorRight)
+                : SongCore.Utilities.Utils.ColorFromMapColor(songDifficultyData._envColorRight);
             var envWhite = songDifficultyData._envColorWhite == null || !_config.CustomSongEnvironmentColors
                 ? currentColorScheme.environmentColorW
-                : Utils.ColorFromMapColor(songDifficultyData._envColorWhite);
+                : SongCore.Utilities.Utils.ColorFromMapColor(songDifficultyData._envColorWhite);
             var envLeftBoost = songDifficultyData._envColorLeftBoost == null || !_config.CustomSongEnvironmentColors
                 ? currentColorScheme.environmentColor0Boost
-                : Utils.ColorFromMapColor(songDifficultyData._envColorLeftBoost);
+                : SongCore.Utilities.Utils.ColorFromMapColor(songDifficultyData._envColorLeftBoost);
             var envRightBoost = songDifficultyData._envColorRightBoost == null|| !_config.CustomSongEnvironmentColors
                 ? currentColorScheme.environmentColor1Boost
-                : Utils.ColorFromMapColor(songDifficultyData._envColorRightBoost);
+                : SongCore.Utilities.Utils.ColorFromMapColor(songDifficultyData._envColorRightBoost);
             var envWhiteBoost = songDifficultyData._envColorWhiteBoost == null  || !_config.CustomSongEnvironmentColors
                 ? currentColorScheme.environmentColorWBoost
-                : Utils.ColorFromMapColor(songDifficultyData._envColorWhiteBoost);
+                : SongCore.Utilities.Utils.ColorFromMapColor(songDifficultyData._envColorWhiteBoost);
             var obstacle = songDifficultyData._obstacleColor == null || !_config.CustomSongObstacleColors
                 ? currentColorScheme.obstaclesColor
-                : Utils.ColorFromMapColor(songDifficultyData._obstacleColor);
+                : SongCore.Utilities.Utils.ColorFromMapColor(songDifficultyData._obstacleColor);
 
             return new ColorScheme("SongCoreMapColorScheme", "SongCore Map Color Scheme", true, "SongCore Map Color Scheme", false, true, saberLeft, saberRight, true,
                 envLeft, envRight, envWhite, envLeftBoost != default && envRightBoost != default, envLeftBoost, envRightBoost, envWhiteBoost, obstacle);
